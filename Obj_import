@@ -1,0 +1,181 @@
+#include <QCoreApplication>
+#include <iostream>
+#include <QVector3D>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <sstream>
+using namespace std;
+struct VNormal
+{
+    QVector3D Vn;
+};
+
+struct vertex //структура, хранящая информацию о вершинах
+{
+    QVector3D Dim; //координаты вершин
+};
+
+struct poly //структура, хранящая информацию о полигонах
+{
+    vector<int>Vind;  //хранится информация о порядке соединения вершин
+    vector<int>VTind; //индексы текстурных координат
+    vector<int>VNind; //индексы нормалей
+};
+
+struct object //структура, хранящая информация об объектах
+{
+    string name; //имя объекта
+    vector<int>Pind; //индексы полигонов, из которых состоит объект
+    vector<int>Vind; //индексы вершин, из которых состоит объект
+};
+vector<object>objects;
+vector<vertex>vertices;
+vector<poly>faces;
+vector<VNormal>normals;
+void import()              //функция для импорта
+{
+    cout << "enter file name" << endl;
+    string name;
+    cin >> name;
+    string directory="C:\\Users\\Kirill\\Desktop\\3dfiles\\";
+    name+=".obj";
+    directory+=name;
+    ifstream import (directory);
+    if (!import.is_open())
+    {
+        cout << "can't open the file, try again" << endl;
+    }
+    else
+    {
+        vertices.resize(0);           //изначально я планировал делать это с помощью push_back, но после нескольких дней попыток на одном месте решил сделать так, чтобы хотя бы работало
+        objects.resize(0);
+        string line;
+        int VI=0,VT=0,O=0,F=0,VN=0;
+        while (!import.eof())
+        {
+            import >> line;
+            if (line=="o")
+            {
+                O++;
+                objects.resize(O);
+                import >> line;
+                objects[O-1].name=line;
+            }
+            if (line=="v")
+            {
+                VI++;
+                objects[O-1].Vind.push_back(VI-1);
+                vertices.resize(vertices.size()+1);
+                for (int i=0;i<3;i++)
+                {
+                    import>>line;
+                    float Temp=stof(line);
+                    vertices[VI-1].Dim[i]=Temp;
+                }
+            }
+            if (line=="vt")
+            {
+                VT++; //?
+            }
+            if (line=="vn")
+            {
+                VN++;
+                normals.resize(VN);
+                for (int i=0; i< 3;i++)
+                {
+                    import>>line;
+                    float Temp=stof(line);
+                    normals[VN-1].Vn[i]=Temp;
+                }
+            }
+            if (line=="f")
+            {
+                F++;
+                faces.resize(F);
+                objects[O-1].Pind.push_back(F-1);
+                getline (import,line);
+                vector<string>TEMP;
+                string K;
+                istringstream iss(line);
+                while (iss >> K) TEMP.push_back(K);
+                for (int i=0; i<TEMP.size();i++)
+                    replace(TEMP[i].begin(), TEMP[i].end(), '/', ' ');
+                for (int i=0; i<TEMP.size();i++)
+                {
+                    vector<string>simport(3);
+                    string N;
+                    istringstream lss(TEMP[i]);                      //очень грязная часть, сначала строка разбивается на слова : 1/1/1 2/2/2 --> два вектора 1/1/1 и 2/2/2
+                    for (int j=0; j<3;j++)                           //после в каждом векторе '/' заменяется пробелом, и каждое значение выносится в вектор размером 3 (допущение, что файл всегда содержит все 3 числа)
+                    {                                                //и после этого числа преобразуются из string в int и вносятся в финальные массивы с помощью push_back
+                        lss >> N;
+                        simport[j]=N;
+                    }
+                    faces[F-1].Vind.push_back(stoi(simport[0]));
+                    faces[F-1].VTind.push_back(stoi(simport[1]));
+                    faces[F-1].VNind.push_back(stoi(simport[2]));
+                }
+            }
+        }
+    }
+}
+void Vout () //всего лишь вывод
+{
+    cout << "1-print objects and faces" << endl;
+    cout << "2-print vertices and coordinates" << endl;
+    cout << "3-print normals and coordinates" << endl;
+    cout << "4-exit" << endl;
+    int switcher;
+    bool input=true;
+    while (input==true)
+    {
+        cin >> switcher;
+        switch (switcher)
+        {
+        case 1:
+            for (int i=0;i<objects.size();i++)
+            {
+                cout << "object name is ==================== " << objects[i].name << "====================" <<endl;
+                for (int j=0; j <objects[i].Pind.size(); j++)
+                {
+                    cout << "Vind= ";
+                    for (int k=0; k<faces[objects[i].Pind[j]].Vind.size(); k++)
+                        cout << faces[objects[i].Pind[j]].Vind[k] << ",";
+                    cout << endl;
+                    cout << "VTind= ";
+                    for (int k=0; k<faces[objects[i].Pind[j]].VTind.size(); k++)
+                        cout << faces[objects[i].Pind[j]].VTind[k] << ",";
+                    cout << endl;
+                    cout << "VNind= ";
+                    for (int k=0; k<faces[objects[i].Pind[j]].VNind.size(); k++)
+                        cout << faces[objects[i].Pind[j]].VNind[k] << ",";
+                    cout << endl;
+                }
+            }
+            break;
+        case 2:
+            for (int i=0; i<vertices.size(); i++)
+            {
+                cout << "vertex" << "[" << i+1 << "]" << " X=" << vertices[i].Dim[0] << " Y=" << vertices[i].Dim[1] << " Z=" << vertices[i].Dim[2] << endl;
+            }
+            break;
+        case 3:
+            for (int i=0; i < normals.size();i++)
+            {
+                cout << "Normal" << "[" << i+1 << "]" << " X=" << normals[i].Vn[0] << " Y=" << normals[i].Vn[1] << " Z=" << normals[i].Vn[2] << endl;
+            }
+            break;
+        case 4:
+            input=false;
+            break;
+        default:
+            cout << "wrong input, try again" << endl;
+            break;
+        }
+    }
+}
+int main()
+{
+    import();
+    Vout();
+}
