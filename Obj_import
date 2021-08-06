@@ -12,7 +12,7 @@ vector<QVector2D>UVw;
 vector<vector<int>>PolyVertexInd;
 vector<vector<int>>PolyUVInd;
 vector<vector<int>>PolyNormalInd;
-int test(string word)
+int test(string word) //функция для проверки трех вариантов : без uv, без нормали и со всем, возвращает интовую К для дальнейшего использования в свитче.
 {
     int k;
     size_t size=word.find("/");
@@ -53,7 +53,7 @@ void import()
         {
             string line;
             import >> line;
-            if (line=="v")
+            if (line=="v") //на всем кроме f одинаковый влгоритм-создается временный вектор, и с помощью push_back записывается в массив.
             {
                 QVector3D temp;
                 for (int i=0; i<3;i++)
@@ -99,7 +99,7 @@ void import()
                     replace(line.begin(), line.end(), '/', ' ');
                     stringstream var(line);
                     string number;
-                    switch (n)
+                    switch (n) //свитч для всех предусмотренных вариантов файлов.
                     {
                     case 0:
                         var>>number;
@@ -131,7 +131,7 @@ void import()
     }
 
 }
-void out(vector<vector<int>>vector)
+void out(vector<vector<int>>vector) //перегруженные функции на вывод всей нужной информации для проверок
 {
     for (int i=0; i<vector.size(); i++)
     {
@@ -167,7 +167,7 @@ int main()
     cout << "7-exit" << endl;
     int var;
     bool input=false;
-    while (input==false)
+    while (input==false) //зацикленный вывод инормации о модели.
     {
         cin >> var;
         switch (var)
