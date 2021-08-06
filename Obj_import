@@ -6,167 +6,192 @@
 #include <vector>
 #include <sstream>
 using namespace std;
-struct VNormal
+vector<QVector3D>vertices;
+vector<QVector3D>normals;
+vector<QVector2D>UVw;
+vector<vector<int>>PolyVertexInd;
+vector<vector<int>>PolyUVInd;
+vector<vector<int>>PolyNormalInd;
+int test(string word)
 {
-    QVector3D Vn;
-};
-
-struct vertex //структура, хранящая информацию о вершинах
-{
-    QVector3D Dim; //координаты вершин
-};
-
-struct poly //структура, хранящая информацию о полигонах
-{
-    vector<int>Vind;  //хранится информация о порядке соединения вершин
-    vector<int>VTind; //индексы текстурных координат
-    vector<int>VNind; //индексы нормалей
-};
-
-struct object //структура, хранящая информация об объектах
-{
-    string name; //имя объекта
-    vector<int>Pind; //индексы полигонов, из которых состоит объект
-    vector<int>Vind; //индексы вершин, из которых состоит объект
-};
-vector<object>objects;
-vector<vertex>vertices;
-vector<poly>faces;
-vector<VNormal>normals;
-void import()              //функция для импорта
+    int k;
+    size_t size=word.find("/");
+    size_t l_size=word.find_last_of("/");
+    if (size==l_size)
+    {
+        k=0;                                  // "***/***"
+    }
+    else
+    {
+        if (size==l_size-1)
+        {
+            k=1;                              //  "***//***"
+        }
+        else
+        {
+            k=2;                              //  "***/***/***
+        }
+    }
+    return k;
+}
+void import()
 {
     cout << "enter file name" << endl;
     string name;
     cin >> name;
     string directory="C:\\Users\\Kirill\\Desktop\\3dfiles\\";
-    name+=".obj";
-    directory+=name;
+    directory+=name+".obj";
     ifstream import (directory);
     if (!import.is_open())
     {
         cout << "can't open the file, try again" << endl;
+        abort();
     }
     else
     {
-        vertices.resize(0);           //изначально я планировал делать это с помощью push_back, но после нескольких дней попыток на одном месте решил сделать так, чтобы хотя бы работало
-        objects.resize(0);
-        string line;
-        int VI=0,VT=0,O=0,F=0,VN=0;
         while (!import.eof())
         {
+            string line;
             import >> line;
-            if (line=="o")
-            {
-                O++;
-                objects.resize(O);
-                import >> line;
-                objects[O-1].name=line;
-            }
             if (line=="v")
             {
-                VI++;
-                objects[O-1].Vind.push_back(VI-1);
-                vertices.resize(vertices.size()+1);
-                for (int i=0;i<3;i++)
+                QVector3D temp;
+                for (int i=0; i<3;i++)
                 {
-                    import>>line;
-                    float Temp=stof(line);
-                    vertices[VI-1].Dim[i]=Temp;
+                    import >> line;
+                    temp[i]=stof(line);
                 }
+                vertices.push_back(temp);
             }
             if (line=="vt")
             {
-                VT++; //?
+                QVector2D temp;
+                for (int i=0; i<2;i++)
+                {
+                    import >> line;
+                    temp[i]=stof(line);
+                }
+                UVw.push_back(temp);
             }
             if (line=="vn")
             {
-                VN++;
-                normals.resize(VN);
-                for (int i=0; i< 3;i++)
+                QVector3D temp;
+                for (int i=0; i<3;i++)
                 {
-                    import>>line;
-                    float Temp=stof(line);
-                    normals[VN-1].Vn[i]=Temp;
+                    import >> line;
+                    temp[i]=stof(line);
                 }
+                normals.push_back(temp);
             }
             if (line=="f")
             {
-                F++;
-                faces.resize(F);
-                objects[O-1].Pind.push_back(F-1);
-                getline (import,line);
-                vector<string>TEMP;
-                string K;
-                istringstream iss(line);
-                while (iss >> K) TEMP.push_back(K);
-                for (int i=0; i<TEMP.size();i++)
-                    replace(TEMP[i].begin(), TEMP[i].end(), '/', ' ');
-                for (int i=0; i<TEMP.size();i++)
+                string temp;
+                getline (import,temp);
+                int n=count (temp.begin(),temp.end(), ' ');
+                stringstream ss(temp);
+                vector<int>vertex;
+                vector<int>uv;
+                vector<int>normal;
+                for (int i=0; i<n;i++)
                 {
-                    vector<string>simport(3);
-                    string N;
-                    istringstream lss(TEMP[i]);                      //очень грязная часть, сначала строка разбивается на слова : 1/1/1 2/2/2 --> два вектора 1/1/1 и 2/2/2
-                    for (int j=0; j<3;j++)                           //после в каждом векторе '/' заменяется пробелом, и каждое значение выносится в вектор размером 3 (допущение, что файл всегда содержит все 3 числа)
-                    {                                                //и после этого числа преобразуются из string в int и вносятся в финальные массивы с помощью push_back
-                        lss >> N;
-                        simport[j]=N;
+                    ss>>line;
+                    int n=test(line);
+                    replace(line.begin(), line.end(), '/', ' ');
+                    stringstream var(line);
+                    string number;
+                    switch (n)
+                    {
+                    case 0:
+                        var>>number;
+                        vertex.push_back(stoi(number));
+                        var>>number;
+                        uv.push_back(stoi(number));
+                        break;
+                    case 1:
+                        var>>number;
+                        vertex.push_back(stoi(number));
+                        var>>number;
+                        normal.push_back(stoi(number));
+                        break;
+                    case 2:
+                        var>>number;
+                        vertex.push_back(stoi(number));
+                        var>>number;
+                        uv.push_back(stoi(number));
+                        var>>number;
+                        normal.push_back(stoi(number));
+                        break;
                     }
-                    faces[F-1].Vind.push_back(stoi(simport[0]));
-                    faces[F-1].VTind.push_back(stoi(simport[1]));
-                    faces[F-1].VNind.push_back(stoi(simport[2]));
                 }
+                PolyVertexInd.push_back(vertex);
+                PolyUVInd.push_back(uv);
+                PolyNormalInd.push_back(normal);
             }
         }
     }
+
 }
-void Vout () //всего лишь вывод
+void out(vector<vector<int>>vector)
 {
-    cout << "1-print objects and faces" << endl;
-    cout << "2-print vertices and coordinates" << endl;
-    cout << "3-print normals and coordinates" << endl;
-    cout << "4-exit" << endl;
-    int switcher;
-    bool input=true;
-    while (input==true)
+    for (int i=0; i<vector.size(); i++)
     {
-        cin >> switcher;
-        switch (switcher)
+        for (int j=0; j<vector[i].size();j++)
+            cout << vector[i][j] << ";" ;
+        cout << endl;
+    }
+}
+void out (vector<QVector3D>vector)
+{
+    for (int i=0; i<vector.size();i++)
+    {
+        cout << vector[i][0] << "," << vector[i][1] << "," << vector[i][2] << ";" << endl;
+    }
+}
+void out (vector<QVector2D>vector)
+{
+    for (int i=0; i<vector.size();i++)
+    {
+        cout << vector[i][0] << "," << vector[i][1] << ";" << endl;
+    }
+}
+int main()
+{
+    import();
+    cout << "what do you want to know?" << endl;
+    cout << "1-vertices" << endl;
+    cout << "2-UVws" << endl;
+    cout << "3-normals" << endl;
+    cout << "4-vertex indicies" << endl;
+    cout << "5-UVw indicies" << endl;
+    cout << "6-normal indicies" << endl;
+    cout << "7-exit" << endl;
+    int var;
+    bool input=false;
+    while (input==false)
+    {
+        cin >> var;
+        switch (var)
         {
         case 1:
-            for (int i=0;i<objects.size();i++)
-            {
-                cout << "object name is ==================== " << objects[i].name << "====================" <<endl;
-                for (int j=0; j <objects[i].Pind.size(); j++)
-                {
-                    cout << "Vind= ";
-                    for (int k=0; k<faces[objects[i].Pind[j]].Vind.size(); k++)
-                        cout << faces[objects[i].Pind[j]].Vind[k] << ",";
-                    cout << endl;
-                    cout << "VTind= ";
-                    for (int k=0; k<faces[objects[i].Pind[j]].VTind.size(); k++)
-                        cout << faces[objects[i].Pind[j]].VTind[k] << ",";
-                    cout << endl;
-                    cout << "VNind= ";
-                    for (int k=0; k<faces[objects[i].Pind[j]].VNind.size(); k++)
-                        cout << faces[objects[i].Pind[j]].VNind[k] << ",";
-                    cout << endl;
-                }
-            }
+            out (vertices);
             break;
         case 2:
-            for (int i=0; i<vertices.size(); i++)
-            {
-                cout << "vertex" << "[" << i+1 << "]" << " X=" << vertices[i].Dim[0] << " Y=" << vertices[i].Dim[1] << " Z=" << vertices[i].Dim[2] << endl;
-            }
+            out (UVw);
             break;
         case 3:
-            for (int i=0; i < normals.size();i++)
-            {
-                cout << "Normal" << "[" << i+1 << "]" << " X=" << normals[i].Vn[0] << " Y=" << normals[i].Vn[1] << " Z=" << normals[i].Vn[2] << endl;
-            }
+            out (normals);
             break;
         case 4:
-            input=false;
+            out (PolyVertexInd);
+            break;
+        case 5:
+            out(PolyUVInd);
+            break;
+        case 6:
+            out (PolyNormalInd);
+            break;
+        case 7:
+            input=true;
             break;
         default:
             cout << "wrong input, try again" << endl;
@@ -174,8 +199,4 @@ void Vout () //всего лишь вывод
         }
     }
 }
-int main()
-{
-    import();
-    Vout();
-}
+
