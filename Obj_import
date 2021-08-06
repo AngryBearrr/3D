@@ -87,8 +87,12 @@ void import()
             {
                 string temp;
                 getline (import,temp);
-                int n=count (temp.begin(),temp.end(), ' ');
+                int n=0;
                 stringstream ss(temp);
+                stringstream counter(temp);
+                string ctr; //подсчет "слов" в строке
+                while (counter>>ctr)
+                    n++;
                 vector<int>vertex;
                 vector<int>uv;
                 vector<int>normal;
